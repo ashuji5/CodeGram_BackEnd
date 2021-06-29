@@ -2,6 +2,7 @@ const express = require('express');
 
 require('./db/conn');
 const postRouter = require('./routes/posts');
+const authRouter = require('./routes/users');
 
 
 const cors = require('cors');
@@ -15,7 +16,9 @@ app.use(express.urlencoded({ limit: '30mb', extended: true }))
 
 const port = process.env.PORT || 5001
 
-app.use('/posts', postRouter)
+app.use('/posts', postRouter);
+app.use('/posts', authRouter);
+
 
 app.listen(port, () => {
     console.log(`Server running at port ${port}`);

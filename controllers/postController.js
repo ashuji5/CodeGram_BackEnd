@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 
 const {PostMessage} = require('../models/posts');
+const { post } = require('../routes/users');
 
  const getPost = async (req, res) => { 
     try {
@@ -13,10 +14,10 @@ const {PostMessage} = require('../models/posts');
     }
 }
  const createPost = async (req, res) => {
-    const { message, creator, selectedFile } = req.body;
+    const post = req.body;
     
 
-    const newPostMessage = new PostMessage({  message,  creator, selectedFile })
+    const newPostMessage = new PostMessage({ ...post,creator : req.userID, createdAt: new Date().toISOString() });
 
     try {
         await newPostMessage.save();
@@ -29,7 +30,7 @@ const {PostMessage} = require('../models/posts');
 
 const updatePost = async(req, res) =>{
 
-    const { message, creator, selectedFile } = req.body;
+    const { message, name, selectedFile } = req.body;
     // console.log(`${message} ${creator}`);
 
 
@@ -42,7 +43,7 @@ const updatePost = async(req, res) =>{
             return res.status(404).send("Post not Found");
         }
    
-        const updatedPost =  await PostMessage.findByIdAndUpdate(_id, {message, creator, selectedFile}, {new : true});
+        const updatedPost =  await PostMessage.findByIdAndUpdate(_id, {message, name, selectedFile}, {new : true});
    
         res.status(202).json(updatedPost);
         
@@ -78,17 +79,53 @@ const deletePost = async (req, res) => {
    
 }
 
+
+const getUserPost = async(req, res) => {
+    try {
+
+        const { id } = req.params;
+        
+        const posts = await PostMessage.find({"creator" : id});
+
+        
+        res.status(200).json(posts);
+
+        
+    } catch (error) {
+
+        console.log(error);
+        res.status(404).json({message : error.message});
+        
+    }
+}
+
+
+
+
 const likePost = async (req, res) => {
 
     try {
 
         const { id } = req.params;
 
+        if(!req.userID) return res.json({message : 'Unauthenticated'});
+
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
         
         const post = await PostMessage.findById(id);
+
+        const index = post.likes.findIndex((id) => id == String(req.userID));
+
+        if(index == -1){
+            post.likes.push(req.userID);
+        }
+        else{
+           post.likes = post.likes.filter((id) => id != String(req.userID));
+        }
     
-        const updatedPost = await PostMessage.findByIdAndUpdate(id, { likeCount: post.likeCount + 1 }, { new: true });
+        const updatedPost = await PostMessage.findByIdAndUpdate(id, post, { new: true });
+
+        
         
         res.json(updatedPost);
         
@@ -105,5 +142,5 @@ const likePost = async (req, res) => {
 
 
 
-module.exports = {getPost, createPost, updatePost, deletePost, likePost};
+module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost};
 
