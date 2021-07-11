@@ -13,10 +13,12 @@ const postSchema = mongoose.Schema({
         type: Date,
         default: new Date(),
     },
-    comment :{
-        type : String,
-        default : 5
-    }
+    comment :[
+        {
+            type : mongoose.Schema.Types.ObjectId,
+            ref : "Comment",
+        }
+    ]
 })
 
 var PostMessage = mongoose.model('post', postSchema);

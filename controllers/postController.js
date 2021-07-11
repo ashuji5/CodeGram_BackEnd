@@ -2,11 +2,12 @@ const mongoose = require('mongoose');
 const express = require('express');
 
 const {PostMessage} = require('../models/posts');
+const {comment} = require('../models/Comment');
 const { post } = require('../routes/users');
 
  const getPost = async (req, res) => { 
     try {
-        const postMessages = await PostMessage.find();
+        const postMessages = await PostMessage.find().populate('comment');
                 
         res.status(200).json(postMessages);
     } catch (error) {
@@ -138,9 +139,42 @@ const likePost = async (req, res) => {
    
 }
 
+const commentPost = async(req, res) => {
+    
+    try {
+
+        const {id} = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
+
+        const {content} = req.body;
+        console.log(content);
+        // console.log(req.user.name);
+
+        const postData = await PostMessage.findById(id);
+
+        const newComment = new comment({ content , post : postData._id });
+   
+        await newComment.save();
+
+        postData.comment.push(newComment._id);
+        // const posty = await PostMessage.findById(id).populate('comment');
+        //  await posty.save();
+        await postData.save();
+
+
+
+        res.status(201).json(postData);
+
+        
+    } catch (error) {
+        res.status(409).json({message : error.message});
+    }
+}
 
 
 
 
-module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost};
+
+module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost};
 
