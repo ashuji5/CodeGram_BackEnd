@@ -3,17 +3,41 @@ const express = require('express');
 
 const {PostMessage} = require('../models/posts');
 const {comment} = require('../models/Comment');
+const {user} = require('../models/users');
 const { post } = require('../routes/users');
 
- const getPost = async (req, res) => { 
-    try {
-        const postMessages = await PostMessage.find().populate('comment');
+//  const getPost = async (req, res) => { 
+//     try {
+//         const postMessages = await PostMessage.find().populate('comment');
                 
-        res.status(200).json(postMessages);
-    } catch (error) {
-        res.status(404).json({ message: error.message });
+//         res.status(200).json(postMessages);
+//     } catch (error) {
+//         res.status(404).json({ message: error.message });
+//     }
+// }
+
+
+const getPost = async (req, res) => {
+    try {
+      const currentUser = await user.findById(req.userID);
+      const userPosts = await PostMessage.find({ "creator": currentUser._id }).populate('comment');
+      const friendPosts = await Promise.all(
+        currentUser.followings.map((friendId) => {
+          return PostMessage.find({ userId: friendId }).populate('comment');
+        })
+      );
+      res.json(userPosts.concat(...friendPosts))
+    } catch (err) {
+      res.status(500).json(err);
     }
-}
+  }
+
+
+
+
+
+
+
  const createPost = async (req, res) => {
     const post = req.body;
     
@@ -86,7 +110,7 @@ const getUserPost = async(req, res) => {
 
         const { id } = req.params;
         
-        const posts = await PostMessage.find({"creator" : id});
+        const posts = await PostMessage.find({"creator" : id}).populate('comment');
 
         
         res.status(200).json(posts);
@@ -145,6 +169,7 @@ const commentPost = async(req, res) => {
 
         const {id} = req.params;
 
+
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
 
         const {content} = req.body;
@@ -173,8 +198,101 @@ const commentPost = async(req, res) => {
 }
 
 
+const followUser = async (req, res) => {
+  console.log("follow");
+    if (req.userID !== req.params.id) {
+      try {
+        
+        console.log(req.userID);
+        console.log("other"+req.params.id);
+
+        const guest = await user.findById(req.params.id);
+        const currentUser = await user.findById(req.userID);
+        if (!guest.followers.includes(req.userID)) {
+          await guest.updateOne({ $push: { followers: req.userID } });
+          await currentUser.updateOne({ $push: { followings: req.params.id } });
+          res.status(200).json("user has been followed");
+        } else {
+          res.status(403).json("you allready follow this user");
+        }
+      } catch (err) {
+        res.status(500).json(err);
+        console.log(err)
+      }
+    } else {
+      res.status(403).json("you cant follow yourself");
+    }
+  };
 
 
 
-module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost};
+  const unFollowUser = async (req, res) => {
+    console.log("unfollow");
+    if (req.userID !== req.params.id) {
+      try {
+        const guest = await user.findById(req.params.id);
+        const currentUser = await user.findById(req.userID);
+        if (guest.followers.includes(req.userID)) {
+          await guest.updateOne({ $pull: { followers: req.userID } });
+          await currentUser.updateOne({ $pull: { followings: req.params.id } });
+          res.status(200).json("user has been unfollowed");
+        } else {
+          res.status(403).json("you dont follow this user");
+        }
+      } catch (err) {
+        res.status(500).json(err);
+      }
+    } else {
+      res.status(403).json("you cant unfollow yourself");
+    }
+  };
+
+const getUser = async(req, res) => {
+    try {
+        console.log("it hit")
+        const {username} = req.params;
+
+        console.log(username);
+
+        const foundUser = await user.find({name : username});
+        
+         const posts = await PostMessage.find({"creator" : foundUser[0]._id})
+
+         const friend = {
+           user : foundUser,
+           post : posts
+         }
+
+        res.status(200).json(friend);
+
+    } catch (error) {
+
+        res.status(404).json({message : error.message});
+        
+    }
+}
+
+const getFriend =  async (req, res) => {
+  try {
+    const currUser = await user.findById(req.params.userId);
+    const friends = await Promise.all(
+      currUser.followings.map((friendId) => {
+        return user.findById(friendId);
+      })
+    );
+    let friendList = [];
+    friends.map((friend) => {
+      const { _id, name, profileImg } = friend;
+      friendList.push({ _id, name, profileImg });
+    });
+    res.status(200).json(friendList)
+  } catch (err) {
+    res.status(500).json(err);
+  }
+}
+
+
+
+
+module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost, followUser, unFollowUser, getUser, getFriend};
 
