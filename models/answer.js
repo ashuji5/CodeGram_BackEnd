@@ -5,6 +5,10 @@ const answerSchema = new mongoose.Schema({
     type: String,
   },
 
+  user : {
+      type : String
+  },
+
   createdAt: {
     type: Date,
     default: new Date(),
@@ -12,6 +16,6 @@ const answerSchema = new mongoose.Schema({
  
 });
 
-var answer = mongoose.model("answer", answerSchema);
+var answers = mongoose.model("answer", answerSchema);
 
-module.exports = {answer};
+module.exports = {answers};

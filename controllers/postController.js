@@ -4,6 +4,8 @@ const express = require('express');
 const {PostMessage} = require('../models/posts');
 const {comment} = require('../models/Comment');
 const {user} = require('../models/users');
+const {answers} = require('../models/answer');
+const {doubt} = require('../models/doubt');
 const { post } = require('../routes/users');
 
 //  const getPost = async (req, res) => { 
@@ -291,8 +293,95 @@ const getFriend =  async (req, res) => {
   }
 }
 
+const postDoubt = async(req, res) => {
+
+  const {Question} = req.body;
+
+  console.log("its clicked");
+  console.log(Question)
+    
+
+    const newDoubt = new doubt({ Qestion :Question,user : req.userID, createdAt: new Date().toISOString() });
+
+  try {
+
+    await newDoubt.save();
+
+    res.status(201).json(newDoubt)
+    
+  } catch (error) {
+
+    res.status(409).json({message : error.message});
+    
+  }
+}
+
+const postAnswer = async(req, res) =>{
+
+  
+
+  try {
+
+    const {id} = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(404).send(`No post with id: ${id}`);
+
+    const {answer} = req.body;
+    
+    // console.log(req.user.name);
+
+    const doubtData = await doubt.findById(id);
+
+    const newAnswer = new answers({ answer , user : req.userID, createdAt: new Date().toISOString() });
+
+    await newAnswer.save();
+
+    doubtData.Answer.push(newAnswer._id);
+    // const posty = await PostMessage.findById(id).populate('comment');
+    //  await posty.save();
+    await doubtData.save();
+
+    res.status(201).json(doubtData);
+
+    
+  } catch (error) {
+
+    res.status(409).json(error);
+    
+  }
+
+}
+
+const getDoubt = async(req, res) =>{
+  try {
+    
+    const doubts = await doubt.find();
+
+    res.status(200).json(doubts);
+
+
+  } catch (error) {
+    res.status(400).json(error)
+  }
+}
+
+const getDoubtById = async(req, res) => {
+  try {
+
+    const {id} = re.params;
+
+    const doubtById = await doubt.findById(id).populate('Answer');
+
+    res.status(200).json(doubtById)
+    
+  } catch (error) {
+
+    res.status(400).json(error);
+    
+  }
+}
 
 
 
-module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost, followUser, unFollowUser, getUser, getFriend};
+module.exports = {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost, followUser, unFollowUser, getUser, getFriend, postDoubt,postAnswer, getDoubt, getDoubtById};
 

@@ -4,10 +4,14 @@ const doubtSchema = new mongoose.Schema({
   Qestion: {
     type: String,
   },
-  Answer: {
+
+  user: {
+      type : String,
+  },
+  Answer: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "answer",
-  },
+  }],
 
   createdAt: {
     type: Date,

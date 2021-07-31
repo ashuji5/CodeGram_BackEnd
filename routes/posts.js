@@ -1,4 +1,4 @@
-const {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost, followUser, getFriend, unFollowUser, getUser} = require('../controllers/postController')
+const {getPost, createPost, updatePost, deletePost, likePost, getUserPost, commentPost, followUser, getFriend, unFollowUser, getUser, getDoubt, getDoubtById, postDoubt, postAnswer} = require('../controllers/postController')
 const expressRouter = require('express').Router;
 const auth = require("../middleware/auth");
 const router = expressRouter();
@@ -14,6 +14,10 @@ router.put('/:id/follow',auth, followUser );
 router.put('/:id/unfollow', auth,unFollowUser );
 router.get('/profile/:username', getUser);
 router.get('/friends/:userId', getFriend);
+router.get('/doubt', auth, getDoubt)
+router.get('/doubt/:id',auth, getDoubtById)
+router.post('/doubt',auth, postDoubt);
+router.post('doubt/:id',auth,postAnswer )
 
 
 module.exports = router;
